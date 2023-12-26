@@ -40,28 +40,35 @@ function App() {
     const [sizes, setSizes] = useState([100, '30%', 'auto',]);
     const [explorerItems, setExlorerItems] = useState([]);
 
+    const getExplorerVisibility = () => {return editorData.explorerOnStartUp === true;}
+    const [explorerVisibility, setExplorerVisibility] = useState(getExplorerVisibility());
+
     const fetchEditorData = async () => {
-        if (editorData !== DEFAULT_CONFIG) return;
-        try {
-            if (await fs.exists(CONFIG_PATH)) {
-                const data = await fs.readTextFile(CONFIG_PATH);
-                setEditorData(JSON.parse(data));
-            }
-        } catch (error) {
-            useEffect(async () => {
-                console.log("Saving @", CONFIG_PATH);
-                await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
-                setEditorData(DEFAULT_CONFIG);
-            }, []);
+        if (await fs.exists(CONFIG_PATH)) {
+            if (editorData !== DEFAULT_CONFIG) return;
+            const data = await fs.readTextFile(CONFIG_PATH);
+            setEditorData(JSON.parse(data));
+        } else {
+            console.log("Saving @", CONFIG_PATH);
+            await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
+            setEditorData(DEFAULT_CONFIG);
         }
     };
 
     const readCurDir = async () => {
+        if (!explorerVisibility) {
+            setExlorerItems([]);
+            return;
+        }
         const dirContents = await fs.readDir(DEFAULT_PATH, { recursive: true });
         setExlorerItems(dirContents);
     }
 
-    useEffect(() => { fetchEditorData(); readCurDir(); }, []);
+    useEffect(() => { 
+        fetchEditorData(); 
+        setExplorerVisibility(getExplorerVisibility());
+        readCurDir(); 
+    }, [editorData]);
 
     const [file, setFile] = useState({
         path: "C:/",
@@ -111,6 +118,7 @@ function App() {
     useOnCtrlKeyPress(onOpen, "KeyO");
     useOnCtrlKeyPress(onSave, "KeyS");
 
+    console.log(editorData);
     return (
         <div className="box">
             <div className="row header">
@@ -180,9 +188,9 @@ function App() {
                 </div>
             </div>
             <div className="row content">
-                <SplitPane split='vertical' sizes={sizes} onChange={setSizes}>
+                {explorerVisibility && <SplitPane split='vertical' sizes={sizes} onChange={setSizes}>
                     <Pane minSize="0%" maxSize='50%'>
-                    <Explorer items={explorerItems} openFile={openFile}></Explorer>
+                        <Explorer items={explorerItems} openFile={openFile}/>
                     </Pane>
                     <Editor
                         defaultValue={editorData.defaultValue}
@@ -192,7 +200,15 @@ function App() {
                         value={file.value}
                         onMount={onEditorMount}
                         options={editorData.options} />
-                </SplitPane>
+                </SplitPane>}
+                {!explorerVisibility && <Editor
+                        defaultValue={editorData.defaultValue}
+                        defaultLanguage={editorData.defaultLanguage}
+                        theme={editorData.theme}
+                        language={file.lang}
+                        value={file.value}
+                        onMount={onEditorMount}
+                        options={editorData.options} />}
             </div>
         </div>
     );

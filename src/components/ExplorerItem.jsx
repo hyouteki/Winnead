@@ -4,7 +4,6 @@ import { useState } from "react";
 function ExplorerItem({ item, openFile }) {
     const [opened, setOpened] = useState(false);
     const btnOnClick = () => {
-        console.log("clicked ", item.name);
         if (item.children) {setOpened(!opened);}
         else {openFile(item.path);}
     }

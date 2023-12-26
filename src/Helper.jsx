@@ -1,4 +1,5 @@
 export const DEFAULT_CONFIG_STR = `{
+    "explorerOnStartUp": true,
     "defaultValue": "// Welcome to Winnead",
     "defaultLanguage": "javascript",
     "theme": "vs-dark",
