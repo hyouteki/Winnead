@@ -1,4 +1,4 @@
-export const DEFAULT_CONFIG = `{
+export const DEFAULT_CONFIG_STR = `{
     "defaultValue": "// Welcome to Winnead",
     "defaultLanguage": "javascript",
     "theme": "vs-dark",

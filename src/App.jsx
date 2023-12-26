@@ -3,14 +3,18 @@ import './components/Navbar.css';
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import * as dialog from '@tauri-apps/api/dialog';
 import * as fs from '@tauri-apps/api/fs';
-import { exit } from '@tauri-apps/api/process';
 import { appWindow } from '@tauri-apps/api/window';
 import { useOnCtrlKeyPress } from './hooks/useOnKeyPress';
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
-import { DEFAULT_CONFIG } from './Helper';
+import { DEFAULT_CONFIG_STR } from './Helper';
+import SplitPane, { Pane } from 'split-pane-react';
+import 'split-pane-react/esm/themes/default.css';
+import Explorer from './components/Explorer';
 
 const CONFIG_PATH = "C:/Winnead/config.json";
 const WINNEAD_DIR_PATH = "C:/Winnead";
+const DEFAULT_PATH = "C:/hyouteki/projects/kappa";
+const DEFAULT_CONFIG = JSON.parse(DEFAULT_CONFIG_STR);
 
 const fileType = (ext) => {
     const known = {
@@ -32,9 +36,12 @@ const getConfig = async () => {
 }
 
 function App() {
-    const [editorData, setEditorData] = useState({});
+    const [editorData, setEditorData] = useState(DEFAULT_CONFIG);
+    const [sizes, setSizes] = useState([100, '30%', 'auto',]);
+    const [explorerItems, setExlorerItems] = useState([]);
 
     const fetchEditorData = async () => {
+        if (editorData !== DEFAULT_CONFIG) return;
         try {
             if (await fs.exists(CONFIG_PATH)) {
                 const data = await fs.readTextFile(CONFIG_PATH);
@@ -43,49 +50,42 @@ function App() {
         } catch (error) {
             useEffect(async () => {
                 console.log("Saving @", CONFIG_PATH);
-                await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG);
-                setEditorData(JSON.parse(DEFAULT_CONFIG));
+                await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
+                setEditorData(DEFAULT_CONFIG);
             }, []);
         }
     };
 
-    useEffect(() => {
-        fetchEditorData();
-    }, []);
+    const readCurDir = async () => {
+        const dirContents = await fs.readDir(DEFAULT_PATH, { recursive: true });
+        setExlorerItems(dirContents);
+    }
+
+    useEffect(() => { fetchEditorData(); readCurDir(); }, []);
 
     const [file, setFile] = useState({
         path: "C:/",
         value: editorData.defaultValue,
         lang: editorData.defaultLanguage,
     });
+
     const editorRef = useRef(null);
+    function onEditorMount(editor, _) { editorRef.current = editor; }
 
-    function onEditorMount(editor, _) {
-        editorRef.current = editor;
-    }
-
-    const onMinimize = async () => {
-        await appWindow.minimize();
-    }
-
-    const onMaximize = async () => {
-        await appWindow.maximize();
-    }
-
-    const onClose = async () => {
-        await appWindow.close();
-    }
+    const onMinimize = async () => { await appWindow.minimize(); }
+    const onMaximize = async () => { await appWindow.maximize(); }
+    const onClose = async () => { await appWindow.close(); }
 
     const onOpen = useCallback(async () => {
         const selectedPath = await dialog.open({
             multiple: false,
             title: "Select File to Open",
-            defaultPath: "C:/hyouteki",
+            defaultPath: DEFAULT_PATH,
         });
         if (selectedPath === null) return;
         const filepath = selectedPath.slice(0);
         const value = await fs.readTextFile(selectedPath);
-        var ext = selectedPath.slice(selectedPath.lastIndexOf('.') + 1);
+        const ext = selectedPath.slice(selectedPath.lastIndexOf('.') + 1);
         const lang = fileType(ext);
         setFile({ path: filepath, value: value, lang: lang });
     }, []);
@@ -102,14 +102,15 @@ function App() {
         setFile({ path: CONFIG_PATH, value: await getConfig(), lang: "json" });
     }, []);
 
-    const onExit = async () => {
-        await exit(1);
+    const openFile = async (filepath) => {
+        const value = await fs.readTextFile(filepath);
+        const lang = fileType(filepath.slice(filepath.lastIndexOf('.') + 1));
+        setFile({ path: filepath, value: value, lang: lang });
     }
 
     useOnCtrlKeyPress(onOpen, "KeyO");
     useOnCtrlKeyPress(onSave, "KeyS");
 
-    console.log(editorData);
     return (
         <div className="box">
             <div className="row header">
@@ -123,7 +124,7 @@ function App() {
                             <button className="menu-item" onClick={onOpen}>
                                 Open File&nbsp;&nbsp;<Shortcut shortcut={"Ctrl+O"} />
                             </button>
-                            <button className="menu-item">
+                            <button className="menu-item" onClick={readCurDir}>
                                 Open Folder
                             </button>
                             <button className="menu-item" onClick={onSave}>
@@ -138,7 +139,7 @@ function App() {
                             <button className="menu-item" onClick={onEditConfig}>
                                 Edit Config
                             </button>
-                            <button className="menu-item" onClick={onExit}>
+                            <button className="menu-item" onClick={onClose}>
                                 Exit&nbsp;&nbsp;<Shortcut shortcut={"Alt+F4"} />
                             </button>
                         </div>
@@ -179,14 +180,19 @@ function App() {
                 </div>
             </div>
             <div className="row content">
-                <Editor
-                    defaultValue={editorData.defaultValue}
-                    defaultLanguage={editorData.defaultLanguage}
-                    theme={editorData.theme}
-                    language={file.lang}
-                    value={file.value}
-                    onMount={onEditorMount}
-                    options={editorData.options} />
+                <SplitPane split='vertical' sizes={sizes} onChange={setSizes}>
+                    <Pane minSize="0%" maxSize='50%'>
+                    <Explorer items={explorerItems} openFile={openFile}></Explorer>
+                    </Pane>
+                    <Editor
+                        defaultValue={editorData.defaultValue}
+                        defaultLanguage={editorData.defaultLanguage}
+                        theme={editorData.theme}
+                        language={file.lang}
+                        value={file.value}
+                        onMount={onEditorMount}
+                        options={editorData.options} />
+                </SplitPane>
             </div>
         </div>
     );

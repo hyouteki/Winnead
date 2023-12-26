@@ -1,0 +1,69 @@
+@font-face {
+    font-family: "Roboto";
+    src: url("../assets/fonts/Roboto-Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+:root {
+    --explorer-bg: #333333;
+    --explorer-fg: #8a817c;
+    --explorer-item-hover-bg: #5E6A6C;
+    --explorer-item-hover-fg: #221e22;
+}
+
+.explorer-item {
+    font-family: "Roboto";
+    width: 100%;
+    height: 40px;
+    font-size: 20px;
+    padding: 10px;
+    padding-left: 20px;
+    text-align: left;
+    user-select: none;
+    color: var(--explorer-fg);
+    border-radius: 0;
+    box-shadow: none;
+    background-color: transparent;
+    border: none;
+    text-wrap: false;
+}
+
+.explorer-item:hover {
+    background-color: var(--explorer-item-hover-bg);
+    color: var(--explorer-item-hover-fg);
+}
+
+.sub-explorer-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.sub-explorer {
+    display: flex;
+    flex-direction: column;
+    padding-left: 30px;
+    width: 100%;
+}
+
+.sub-explorer-line {
+    height: 100%;
+    width: 4px;
+    left: 0;
+    margin-left: 20px;
+    background-color: var(--explorer-item-hover-bg);
+}
+
+.invisible {
+    display: none;
+}
+
+
+.explorer-item .svg {
+    filter: invert(54%) sepia(6%) saturate(495%) hue-rotate(338deg) brightness(94%) contrast(86%);
+    margin-right: 10px;
+}
+
+.explorer-item:hover .svg {
+    filter: invert(6%) sepia(21%) saturate(505%) hue-rotate(251deg) brightness(91%) contrast(85%);
+}
