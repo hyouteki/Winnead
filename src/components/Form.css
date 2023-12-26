@@ -1,0 +1,100 @@
+@font-face {
+	font-family: "Roboto";
+	src: url("assets/fonts/Roboto-Regular.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+}
+
+:root {
+  --bg: #202020;
+  --form-bg: #2b2a2a;
+  --label-bg: #5E6A6C;
+  --label-fg: #221e22; 
+  --input-bg: #413f3e;
+  --input-fg: #8a817c;
+
+  --input-height: 40px;
+}
+
+#root {
+  margin: 0px;
+  padding: 0px;
+  height: 100vh;
+  background-color: var(--bg);
+}
+
+body {
+  margin: 0px;
+  height: 100%;
+}
+
+.center-horizontal {
+  margin: auto;
+}
+
+.margin-top {
+  margin-top: 40px;
+}
+
+form {  
+  background-color: var(--form-bg);
+  width: 40%;
+  padding: 20px;
+  padding-top: 10px;
+  font-family: 'Roboto';
+} 
+
+.input-container {
+  display: flex;
+  flex-direction: row;
+  padding-top: 10px;
+}
+
+label {
+  display: flex;
+  background-color: var(--label-bg);
+  color: var(--label-fg);
+  font-size: 20px;
+  padding: 0px 10px;
+  align-items: center;
+}
+
+.input {
+  background-color: var(--input-bg);
+  border-radius: 0;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--input-height);
+  color: var(--input-fg);
+  padding: 0px 10px;
+  margin: 0px;
+  font-size: 20px;
+  box-shadow: none;
+}
+
+.btn-container {
+  display: flex;
+  flex-direction: row;
+  padding-top: 10px;
+  justify-content: center;
+}
+
+.btn {
+  display: flex;
+  background-color: transparent;
+  color: var(--input-fg);
+  border: 2px solid var(--input-fg);
+  font-size: 20px;
+  padding: 0px 10px;
+  height: var(--input-height);
+  border-radius: 0;
+  align-items: center;
+}
+
+.btn:hover {
+  background-color: var(--label-bg);
+  color: var(--label-fg);
+  border: none;
+  box-shadow: none;
+}

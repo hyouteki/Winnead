@@ -1,0 +1,26 @@
+{
+  "name": "winnead",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "@tauri-apps/api": "^1.5.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-highlight-within-textarea": "^3.2.1",
+    "react-router-dom": "^6.21.1",
+    "tauri-plugin-store-api": "github:tauri-apps/tauri-plugin-store#v1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.8",
+    "@vitejs/plugin-react": "^4.0.3",
+    "vite": "^5.0.0"
+  }
+}

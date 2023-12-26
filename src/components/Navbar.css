@@ -1,0 +1,120 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("../assets/fonts/Roboto-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("../assets/fonts/Roboto-Italic.ttf") format("truetype");
+  font-weight: normal;
+  font-style: italic;
+}
+
+:root {
+  --navbar-bg: #2b2a2a;
+  --navbar-fg: #8a817c;
+  --navbar-button-hover-bg: #5E6A6C;
+  --navbar-button-hover-fg: #221e22;
+
+  --navbar-height: 40px;
+}
+
+#root {
+  margin: 0px;
+  padding: 0px;
+  height: 100vh;
+}
+
+.navbar {
+  display: block;
+  left: 0;
+  width: 100%;
+  user-select: none; /* Standard syntax */
+  background-color: var(--navbar-bg);
+  font-family: 'Roboto';
+  height: var(--navbar-height);
+  color: var(--navbar-fg);
+  font-size: 20px;
+  margin: 0px;
+  padding: 0px;
+  text-decoration: none;
+}
+
+.menu-item,
+.dropdown-content .menu-item {
+  float: left;
+  background-color: inherit;
+  color: inherit;
+  padding: 0px 20px;
+  height: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  border-radius: 0px;
+  margin: 0px;
+  text-align: center;
+  z-index: 9998 !important;
+}
+
+.menu-item:hover {
+  background-color: var(--navbar-button-hover-bg);
+  color: var(--navbar-button-hover-fg);
+  border: none;
+  box-shadow: none;
+}
+
+.dropdown {
+  overflow: hidden;
+  float: left;
+  box-shadow: none;
+  height: inherit;
+}
+
+.dropdown:hover .dropdown-content {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--navbar-bg);
+}
+
+.dropdown-content .menu-item {
+  padding: 10px 20px;
+  text-align: left;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: inherit;
+  top: var(--navbar-height);
+}
+
+.window-button-container {
+  display: flex;
+  position: absolute;
+  right: 0;
+  margin-left: auto;
+  flex-direction: row;
+  background-color: var(--navbar-bg);
+}
+
+.titlebar-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: var(--navbar-height);
+  height: var(--navbar-height);
+}
+
+.titlebar-button .svg {
+  filter: invert(54%) sepia(6%) saturate(495%) hue-rotate(338deg) brightness(94%) contrast(86%);
+}
+
+.titlebar-button:hover {
+  background-color: var(--navbar-button-hover-bg);
+  color: var(--navbar-button-hover-fg);
+}
+
+.titlebar-button:hover .svg {
+  filter: invert(6%) sepia(21%) saturate(505%) hue-rotate(251deg) brightness(91%) contrast(85%);
+}
