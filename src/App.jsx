@@ -247,7 +247,7 @@ function App() {
                     <div className="dropdown">
                         <button className="menu-item">View</button>
                         <div className="dropdown-content">
-                            <button className="menu-item" onclick={onToggleExplorer}>
+                            <button className="menu-item" onClick={onToggleExplorer}>
                                 Toggle Explorer&nbsp;&nbsp;<Keymap keymap={"Ctrl+B"} />
                             </button>
                             {/* <a href="/" className="menu-item">Runner</a>
