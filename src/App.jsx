@@ -15,10 +15,10 @@ const CONFIG_PATH = "C:/Winnead/config.json";
 const WINNEAD_DIR_PATH = "C:/Winnead";
 const DEFAULT_CONFIG = JSON.parse(DEFAULT_CONFIG_STR);
 
-const CONFIG = (await fs.exists(CONFIG_PATH))
-    ? JSON.parse(await fs.readTextFile(CONFIG_PATH))
-    : DEFAULT_CONFIG;
-if (!await fs.exists(CONFIG_PATH)) {
+let CONFIG = DEFAULT_CONFIG
+if (await fs.exists(CONFIG_PATH)) {
+    try {CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH))} catch (e) {}
+} else {
     console.log("Saving @", CONFIG_PATH);
     await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
 }
@@ -55,6 +55,7 @@ function App() {
     useEffect(() => { readCurDir(); }, []);
 
     const [file, setFile] = useState({
+        valid: false,
         path: DEFAULT_PATH,
         value: CONFIG.defaultValue,
         lang: CONFIG.defaultLanguage,
@@ -69,10 +70,11 @@ function App() {
 
     const onNewFile = useCallback(async () => {
         await onSave();
-        setFile({path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage,});
+        setFile({ valid: false, path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage, });
     }, [])
 
     const onOpen = useCallback(async () => {
+        await onSave();
         const selectedPath = await dialog.open({
             multiple: false,
             title: "Select File to Open",
@@ -84,10 +86,11 @@ function App() {
         const value = await fs.readTextFile(selectedPath);
         const ext = selectedPath.slice(selectedPath.lastIndexOf('.') + 1);
         const lang = fileType(ext);
-        setFile({ path: filepath, value: value, lang: lang });
+        setFile({ valid: true, path: filepath, value: value, lang: lang });
     }, []);
 
     const onOpenFolder = useCallback(async () => {
+        await onSave();
         const selectedPath = await dialog.open({
             multiple: false,
             title: "Select Folder to Open",
@@ -98,10 +101,11 @@ function App() {
         setExplorerVisibility(true);
         setCurPath(selectedPath);
         setExlorerItems(await fs.readDir(selectedPath, { recursive: false }));
-        setFile({path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage});
+        setFile({ valid: false, path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage });
     }, []);
 
     const onSave = useCallback(async () => {
+        if (!file.valid) return;
         console.log("Saving @", file.path);
         await fs.writeTextFile(file.path, editorRef.current.getValue());
     }, [file, editorRef]);
@@ -116,27 +120,39 @@ function App() {
         await fs.writeTextFile(selectedPath, editorRef.current.getValue());
         const ext = selectedPath.slice(selectedPath.lastIndexOf('.') + 1);
         const lang = fileType(ext);
-        setFile({ path: selectedPath, value: editorRef.current.getValue(), lang: lang });
+        setFile({ valid: true, path: selectedPath, value: editorRef.current.getValue(), lang: lang });
         await readCurDir();
     }, []);
-    
+
+    const onReloadConfig = useCallback(async () => {
+        if (await fs.exists(CONFIG_PATH)) {
+            try {CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH))} catch (e) {}
+        } else {
+            console.log("Saving @", CONFIG_PATH);
+            await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
+        }
+        editorRef.current.updateOptions(CONFIG.options)
+    });
+
     const onCloseFolder = useCallback(async () => {
+        await onSave();
         setExlorerItems([]);
         setExplorerVisibility(false);
     }, []);
 
     const onEditConfig = useCallback(async () => {
+        await onSave();
         if (!await fs.exists(WINNEAD_DIR_PATH)) {
             await fs.createDir(WINNEAD_DIR_PATH, { recursive: true });
         }
-        setFile({ path: CONFIG_PATH, value: await getConfig(), lang: "json" });
+        setFile({ valid: true, path: CONFIG_PATH, value: await getConfig(), lang: "json" });
     }, []);
 
     const openFile = async (filepath) => {
         const value = await fs.readTextFile(filepath);
         const lang = fileType(filepath.slice(filepath.lastIndexOf('.') + 1));
-        console.log("current file @", { path: filepath, value: value, lang: lang });
-        setFile({ path: filepath, value: value, lang: lang });
+        console.log("current file @", { valid: true, path: filepath, value: value, lang: lang });
+        setFile({ valid: true, path: filepath, value: value, lang: lang });
     }
 
     const expandFolder = async (item, parents) => {
@@ -180,10 +196,15 @@ function App() {
         setExlorerItems(newExplorerTree);
     }
 
+    const onToggleExplorer = () => {setExplorerVisibility(!explorerVisibility)};
+
     useOnCtrlKeyPress(onNewFile, "KeyN");
     useOnCtrlKeyPress(onOpen, "KeyO");
+    useOnCtrlKeyPress(onOpenFolder, "KeyK");
     useOnCtrlKeyPress(onSave, "KeyS");
     useOnCtrlKeyPress(onEditConfig, "Comma");
+    useOnCtrlKeyPress(onToggleExplorer, "KeyB");
+    useOnCtrlShiftKeyPress(onReloadConfig, "Comma");
     useOnCtrlShiftKeyPress(onSaveAs, "KeyS");
 
     console.log(explorerItems);
@@ -201,7 +222,7 @@ function App() {
                                 Open File&nbsp;&nbsp;<Keymap keymap={"Ctrl+O"} />
                             </button>
                             <button className="menu-item" onClick={onOpenFolder}>
-                                Open Folder
+                                Open Folder&nbsp;&nbsp;<Keymap keymap={"Ctrl+K"} />
                             </button>
                             <button className="menu-item" onClick={onSave}>
                                 Save&nbsp;&nbsp;<Keymap keymap={"Ctrl+S"} />
@@ -215,6 +236,9 @@ function App() {
                             <button className="menu-item" onClick={onEditConfig}>
                                 Edit Config&nbsp;&nbsp;<Keymap keymap={"Ctrl+,"} />
                             </button>
+                            <button className="menu-item" onClick={onReloadConfig}>
+                                Reload Config&nbsp;&nbsp;<Keymap keymap={"Ctrl+Shift+,"} />
+                            </button>
                             <button className="menu-item" onClick={onClose}>
                                 Exit&nbsp;&nbsp;<Keymap keymap={"Alt+F4"} />
                             </button>
@@ -223,19 +247,21 @@ function App() {
                     <div className="dropdown">
                         <button className="menu-item">View</button>
                         <div className="dropdown-content">
-                            <a href="/" className="menu-item">Explorer</a>
-                            <a href="/" className="menu-item">Runner</a>
-                            <a href="/" className="menu-item">Terminal</a>
+                            <button className="menu-item" onclick={onToggleExplorer}>
+                                Toggle Explorer&nbsp;&nbsp;<Keymap keymap={"Ctrl+B"} />
+                            </button>
+                            {/* <a href="/" className="menu-item">Runner</a>
+                            <a href="/" className="menu-item">Terminal</a> */}
                         </div>
                     </div>
-                    <div className="dropdown">
+                    {/* <div className="dropdown">
                         <button className="menu-item dropdown-button">Display</button>
                         <div className="dropdown-content">
                             <a href="/" className="menu-item">Open Explorer</a>
                             <a href="/" className="menu-item">New Terminal</a>
                             <a href="/" className="menu-item">Close Terminal</a>
                         </div>
-                    </div>
+                    </div> */}
                     <div className="window-button-container">
                         <div className="titlebar-button" id="titlebar-minimize" onClick={onMinimize}>
                             <svg className="svg" xmlns="http://www.w3.org/2000/svg" height="16" width="14" viewBox="0 0 448 512">
@@ -258,7 +284,7 @@ function App() {
             <div className="row content">
                 {explorerVisibility && <SplitPane split='vertical' sizes={sizes} onChange={setSizes}>
                     <Pane minSize="0%" maxSize='50%'>
-                        <Explorer items={explorerItems} openFile={openFile} 
+                        <Explorer items={explorerItems} openFile={openFile}
                             expandFolder={expandFolder} collapseFolder={collapseFolder} />
                     </Pane>
                     <Editor
