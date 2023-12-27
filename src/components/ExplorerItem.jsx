@@ -1,10 +1,15 @@
 import "./ExplorerItem.css";
 import { useState } from "react";
 
-function ExplorerItem({ item, openFile }) {
+function ExplorerItem({ item, openFile, parents, expandFolder, collapseFolder }) {
     const [opened, setOpened] = useState(false);
     const btnOnClick = () => {
-        if (item.children) {setOpened(!opened);}
+        console.log(parents);
+        if (item.children) {
+            if (opened) collapseFolder(item, parents);
+            else expandFolder(item, parents);
+            setOpened(!opened);
+        }
         else {openFile(item.path);}
     }
     return (
@@ -28,7 +33,9 @@ function ExplorerItem({ item, openFile }) {
                 <div className="sub-explorer-line" />
                 {
                     item.children && <div className={`sub-explorer ${opened ? '' : 'invisible'}`}>
-                        {item.children.map((item) => <ExplorerItem key={item.path} item={item} openFile={openFile}></ExplorerItem>)}
+                        {item.children.map((subitem) => <ExplorerItem key={subitem.path} item={subitem} 
+                            openFile={openFile} parents={[...parents, item.name]} 
+                            expandFolder={expandFolder} collapseFolder={collapseFolder}/>)}
                     </div>
                 }
             </div>

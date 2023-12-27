@@ -1,4 +1,5 @@
 export const DEFAULT_CONFIG_STR = `{
+    "defaultPath": "C:/Winnead/",
     "explorerOnStartUp": true,
     "defaultValue": "// Welcome to Winnead",
     "defaultLanguage": "javascript",
@@ -15,7 +16,7 @@ export const DEFAULT_CONFIG_STR = `{
         "roundedSelection": true,
         "readOnly": false,
         "mouseWheelZoom": false,
-        "cursorStyle": "block",
+        "cursorStyle": "line",
         "fontLigatures": false,
         "fontVariations": false,
         "scrollBeyondLastLine": true,

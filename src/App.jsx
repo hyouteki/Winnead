@@ -13,8 +13,17 @@ import Explorer from './components/Explorer';
 
 const CONFIG_PATH = "C:/Winnead/config.json";
 const WINNEAD_DIR_PATH = "C:/Winnead";
-const DEFAULT_PATH = "C:/hyouteki/projects/kappa";
 const DEFAULT_CONFIG = JSON.parse(DEFAULT_CONFIG_STR);
+
+const CONFIG = (await fs.exists(CONFIG_PATH))
+    ? JSON.parse(await fs.readTextFile(CONFIG_PATH))
+    : DEFAULT_CONFIG;
+if (!await fs.exists(CONFIG_PATH)) {
+    console.log("Saving @", CONFIG_PATH);
+    await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
+}
+
+const DEFAULT_PATH = (CONFIG.defaultPath) ? CONFIG.defaultPath : "C:/Winnead";
 
 const fileType = (ext) => {
     const known = {
@@ -25,55 +34,29 @@ const fileType = (ext) => {
     return (ext in known) ? known[ext] : ext;
 }
 
-const Shortcut = ({ shortcut }) => {
-    return (<span style={{ fontStyle: 'italic', fontSize: 15 }}>{shortcut}</span>);
+const Keymap = ({ keymap }) => {
+    return (<span style={{ fontStyle: 'italic', fontSize: 15 }}>{keymap}</span>);
 }
 
 const getConfig = async () => {
-    return (await fs.exists(CONFIG_PATH))
-        ? await fs.readTextFile(CONFIG_PATH)
-        : DEFAULT_CONFIG;
+    return (await fs.exists(CONFIG_PATH)) ? await fs.readTextFile(CONFIG_PATH) : DEFAULT_CONFIG;
 }
 
 function App() {
-    const [editorData, setEditorData] = useState(DEFAULT_CONFIG);
-    const [sizes, setSizes] = useState([100, '30%', 'auto',]);
+    const [sizes, setSizes] = useState([100, '30%', 'auto']);
     const [explorerItems, setExlorerItems] = useState([]);
-
-    const getExplorerVisibility = () => {return editorData.explorerOnStartUp === true;}
-    const [explorerVisibility, setExplorerVisibility] = useState(getExplorerVisibility());
-
-    const fetchEditorData = async () => {
-        if (await fs.exists(CONFIG_PATH)) {
-            if (editorData !== DEFAULT_CONFIG) return;
-            const data = await fs.readTextFile(CONFIG_PATH);
-            setEditorData(JSON.parse(data));
-        } else {
-            console.log("Saving @", CONFIG_PATH);
-            await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
-            setEditorData(DEFAULT_CONFIG);
-        }
-    };
+    const [explorerVisibility, setExplorerVisibility] = useState(CONFIG.explorerOnStartUp);
 
     const readCurDir = async () => {
-        if (!explorerVisibility) {
-            setExlorerItems([]);
-            return;
-        }
-        const dirContents = await fs.readDir(DEFAULT_PATH, { recursive: true });
-        setExlorerItems(dirContents);
+        setExlorerItems((explorerVisibility) ? await fs.readDir(DEFAULT_PATH, { recursive: false }) : []);
     }
 
-    useEffect(() => { 
-        fetchEditorData(); 
-        setExplorerVisibility(getExplorerVisibility());
-        readCurDir(); 
-    }, [editorData]);
+    useEffect(() => { readCurDir(); }, []);
 
     const [file, setFile] = useState({
-        path: "C:/",
-        value: editorData.defaultValue,
-        lang: editorData.defaultLanguage,
+        path: DEFAULT_PATH,
+        value: CONFIG.defaultValue,
+        lang: CONFIG.defaultLanguage,
     });
 
     const editorRef = useRef(null);
@@ -115,10 +98,51 @@ function App() {
         setFile({ path: filepath, value: value, lang: lang });
     }
 
+    const expandFolder = async (item, parents) => {
+        const itemsInDir = await fs.readDir(item.path, { recursive: false });
+        let newExplorerTree = [...explorerItems];
+        let curDir = [...newExplorerTree];
+        for (let i = 0; i < parents.length; i++) {
+            for (let j = 0; j < curDir.length; j++) {
+                if (curDir[j].name == parents[i]) {
+                    curDir = [...curDir[j].children];
+                    break;
+                }
+            }
+        }
+        for (let i = 0; i < curDir.length; i++) {
+            if (curDir[i].name == item.name) {
+                curDir[i].children = itemsInDir;
+                break;
+            }
+        }
+        setExlorerItems(newExplorerTree);
+    }
+
+    const collapseFolder = async (item, parents) => {
+        let newExplorerTree = [...explorerItems];
+        let curDir = [...newExplorerTree];
+        for (let i = 0; i < parents.length; i++) {
+            for (let j = 0; j < curDir.length; j++) {
+                if (curDir[j].name == parents[i]) {
+                    curDir = [...curDir[j].children];
+                    break;
+                }
+            }
+        }
+        for (let i = 0; i < curDir.length; i++) {
+            if (curDir[i].name == item.name) {
+                curDir[i].children = [];
+                break;
+            }
+        }
+        setExlorerItems(newExplorerTree);
+    }
+
     useOnCtrlKeyPress(onOpen, "KeyO");
     useOnCtrlKeyPress(onSave, "KeyS");
 
-    console.log(editorData);
+    console.log(explorerItems);
     return (
         <div className="box">
             <div className="row header">
@@ -130,13 +154,13 @@ function App() {
                                 New File
                             </button>
                             <button className="menu-item" onClick={onOpen}>
-                                Open File&nbsp;&nbsp;<Shortcut shortcut={"Ctrl+O"} />
+                                Open File&nbsp;&nbsp;<Keymap shortcut={"Ctrl+O"} />
                             </button>
                             <button className="menu-item" onClick={readCurDir}>
                                 Open Folder
                             </button>
                             <button className="menu-item" onClick={onSave}>
-                                Save&nbsp;&nbsp;<Shortcut shortcut={"Ctrl+S"} />
+                                Save&nbsp;&nbsp;<Keymap shortcut={"Ctrl+S"} />
                             </button>
                             <button className="menu-item">
                                 Save As
@@ -148,7 +172,7 @@ function App() {
                                 Edit Config
                             </button>
                             <button className="menu-item" onClick={onClose}>
-                                Exit&nbsp;&nbsp;<Shortcut shortcut={"Alt+F4"} />
+                                Exit&nbsp;&nbsp;<Keymap shortcut={"Alt+F4"} />
                             </button>
                         </div>
                     </div>
@@ -190,25 +214,26 @@ function App() {
             <div className="row content">
                 {explorerVisibility && <SplitPane split='vertical' sizes={sizes} onChange={setSizes}>
                     <Pane minSize="0%" maxSize='50%'>
-                        <Explorer items={explorerItems} openFile={openFile}/>
+                        <Explorer items={explorerItems} openFile={openFile} 
+                            expandFolder={expandFolder} collapseFolder={collapseFolder} />
                     </Pane>
                     <Editor
-                        defaultValue={editorData.defaultValue}
-                        defaultLanguage={editorData.defaultLanguage}
-                        theme={editorData.theme}
+                        defaultValue={CONFIG.defaultValue}
+                        defaultLanguage={CONFIG.defaultLanguage}
+                        theme={CONFIG.theme}
                         language={file.lang}
                         value={file.value}
                         onMount={onEditorMount}
-                        options={editorData.options} />
+                        options={CONFIG.options} />
                 </SplitPane>}
                 {!explorerVisibility && <Editor
-                        defaultValue={editorData.defaultValue}
-                        defaultLanguage={editorData.defaultLanguage}
-                        theme={editorData.theme}
-                        language={file.lang}
-                        value={file.value}
-                        onMount={onEditorMount}
-                        options={editorData.options} />}
+                    defaultValue={CONFIG.defaultValue}
+                    defaultLanguage={CONFIG.defaultLanguage}
+                    theme={CONFIG.theme}
+                    language={file.lang}
+                    value={file.value}
+                    onMount={onEditorMount}
+                    options={CONFIG.options} />}
             </div>
         </div>
     );
