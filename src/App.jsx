@@ -108,6 +108,7 @@ function App() {
         if (!file.valid) return;
         console.log("Saving @", file.path);
         await fs.writeTextFile(file.path, editorRef.current.getValue());
+        if (file.path == CONFIG_PATH) {onReloadConfig();}
     }, [file, editorRef]);
 
     const onSaveAs = useCallback(async () => {
