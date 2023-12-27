@@ -1,3 +1,2 @@
-- Add Save As
 - add status bar at bottom (filename, language, current folder)
 - terminal (add a shell)

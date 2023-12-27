@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import * as dialog from '@tauri-apps/api/dialog';
 import * as fs from '@tauri-apps/api/fs';
 import { appWindow } from '@tauri-apps/api/window';
-import { useOnCtrlKeyPress } from './hooks/useOnKeyPress';
+import { useOnCtrlKeyPress, useOnCtrlShiftKeyPress } from './hooks/useOnKeyPress';
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
 import { DEFAULT_CONFIG_STR } from './Helper';
 import SplitPane, { Pane } from 'split-pane-react';
@@ -35,7 +35,7 @@ const fileType = (ext) => {
 }
 
 const Keymap = ({ keymap }) => {
-    return (<span style={{ fontStyle: 'italic', fontSize: 15 }}>{keymap}</span>);
+    return <span style={{ fontStyle: 'italic', fontSize: 15 }}>{keymap}</span>;
 }
 
 const getConfig = async () => {
@@ -46,9 +46,10 @@ function App() {
     const [sizes, setSizes] = useState([100, '30%', 'auto']);
     const [explorerItems, setExlorerItems] = useState([]);
     const [explorerVisibility, setExplorerVisibility] = useState(CONFIG.explorerOnStartUp);
+    const [curPath, setCurPath] = useState(DEFAULT_PATH);
 
     const readCurDir = async () => {
-        setExlorerItems((explorerVisibility) ? await fs.readDir(DEFAULT_PATH, { recursive: false }) : []);
+        setExlorerItems((explorerVisibility) ? await fs.readDir(curPath, { recursive: false }) : []);
     }
 
     useEffect(() => { readCurDir(); }, []);
@@ -66,11 +67,17 @@ function App() {
     const onMaximize = async () => { await appWindow.maximize(); }
     const onClose = async () => { await appWindow.close(); }
 
+    const onNewFile = useCallback(async () => {
+        await onSave();
+        setFile({path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage,});
+    }, [])
+
     const onOpen = useCallback(async () => {
         const selectedPath = await dialog.open({
             multiple: false,
             title: "Select File to Open",
-            defaultPath: DEFAULT_PATH,
+            directory: false,
+            defaultPath: curPath,
         });
         if (selectedPath === null) return;
         const filepath = selectedPath.slice(0);
@@ -80,10 +87,43 @@ function App() {
         setFile({ path: filepath, value: value, lang: lang });
     }, []);
 
+    const onOpenFolder = useCallback(async () => {
+        const selectedPath = await dialog.open({
+            multiple: false,
+            title: "Select Folder to Open",
+            directory: true,
+            defaultPath: curPath,
+        });
+        if (selectedPath === null) return;
+        setExplorerVisibility(true);
+        setCurPath(selectedPath);
+        setExlorerItems(await fs.readDir(selectedPath, { recursive: false }));
+        setFile({path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage});
+    }, []);
+
     const onSave = useCallback(async () => {
         console.log("Saving @", file.path);
         await fs.writeTextFile(file.path, editorRef.current.getValue());
     }, [file, editorRef]);
+
+    const onSaveAs = useCallback(async () => {
+        const selectedPath = await dialog.save({
+            title: "Save As",
+            defaultPath: curPath,
+        });
+        if (selectedPath === null) return;
+        console.log("Saving @", selectedPath);
+        await fs.writeTextFile(selectedPath, editorRef.current.getValue());
+        const ext = selectedPath.slice(selectedPath.lastIndexOf('.') + 1);
+        const lang = fileType(ext);
+        setFile({ path: selectedPath, value: editorRef.current.getValue(), lang: lang });
+        await readCurDir();
+    }, []);
+    
+    const onCloseFolder = useCallback(async () => {
+        setExlorerItems([]);
+        setExplorerVisibility(false);
+    }, []);
 
     const onEditConfig = useCallback(async () => {
         if (!await fs.exists(WINNEAD_DIR_PATH)) {
@@ -95,6 +135,7 @@ function App() {
     const openFile = async (filepath) => {
         const value = await fs.readTextFile(filepath);
         const lang = fileType(filepath.slice(filepath.lastIndexOf('.') + 1));
+        console.log("current file @", { path: filepath, value: value, lang: lang });
         setFile({ path: filepath, value: value, lang: lang });
     }
 
@@ -139,8 +180,11 @@ function App() {
         setExlorerItems(newExplorerTree);
     }
 
+    useOnCtrlKeyPress(onNewFile, "KeyN");
     useOnCtrlKeyPress(onOpen, "KeyO");
     useOnCtrlKeyPress(onSave, "KeyS");
+    useOnCtrlKeyPress(onEditConfig, "Comma");
+    useOnCtrlShiftKeyPress(onSaveAs, "KeyS");
 
     console.log(explorerItems);
     return (
@@ -150,29 +194,29 @@ function App() {
                     <div className="dropdown">
                         <button className="menu-item">File</button>
                         <div className="dropdown-content">
-                            <button className="menu-item">
-                                New File
+                            <button className="menu-item" onClick={onNewFile}>
+                                New File&nbsp;&nbsp;<Keymap keymap={"Ctrl+N"} />
                             </button>
                             <button className="menu-item" onClick={onOpen}>
-                                Open File&nbsp;&nbsp;<Keymap shortcut={"Ctrl+O"} />
+                                Open File&nbsp;&nbsp;<Keymap keymap={"Ctrl+O"} />
                             </button>
-                            <button className="menu-item" onClick={readCurDir}>
+                            <button className="menu-item" onClick={onOpenFolder}>
                                 Open Folder
                             </button>
                             <button className="menu-item" onClick={onSave}>
-                                Save&nbsp;&nbsp;<Keymap shortcut={"Ctrl+S"} />
+                                Save&nbsp;&nbsp;<Keymap keymap={"Ctrl+S"} />
                             </button>
-                            <button className="menu-item">
-                                Save As
+                            <button className="menu-item" onClick={onSaveAs}>
+                                Save As&nbsp;&nbsp;<Keymap keymap={"Ctrl+Shift+S"} />
                             </button>
-                            <button className="menu-item">
+                            <button className="menu-item" onClick={onCloseFolder}>
                                 Close Folder
                             </button>
                             <button className="menu-item" onClick={onEditConfig}>
-                                Edit Config
+                                Edit Config&nbsp;&nbsp;<Keymap keymap={"Ctrl+,"} />
                             </button>
                             <button className="menu-item" onClick={onClose}>
-                                Exit&nbsp;&nbsp;<Keymap shortcut={"Alt+F4"} />
+                                Exit&nbsp;&nbsp;<Keymap keymap={"Alt+F4"} />
                             </button>
                         </div>
                     </div>
