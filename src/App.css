@@ -15,7 +15,11 @@
 
   --explorer-bg: #191919;
 
+  --status-bar-bg: #5E6A6C;
+
   --navbar-height: 40px;
+
+  --status-bar-height: 20px;
 
 }
 
@@ -46,13 +50,10 @@ body {
 }
 
 .box .row.footer {
-  flex: 0 1 0px;
+  flex: 0 1 var(--status-bar-height);
 }
 
 .explorer {
   background-color: var(--explorer-bg);
 }
 
-.paddingBottom20px {
-  padding-bottom: 20px;
-}

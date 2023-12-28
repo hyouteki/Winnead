@@ -243,6 +243,15 @@ function App() {
             readDir(newCwd);
             return output.stdout;
         } else if (cmd === "ls") cmd = "lsd";
+        else if (cmd == "ed") {
+            const filepath = (await path.isAbsolute(commandArguments))
+                ? commandArguments : await path.resolve(cwd, commandArguments);
+            const value = await fs.readTextFile(filepath);
+            const ext = filepath.slice(filepath.lastIndexOf('.') + 1);
+            const lang = fileType(ext);
+            setFile({ valid: true, path: filepath, value: value, lang: lang });
+            return `${filepath} opened in editor`;
+        }
         const command = Command.sidecar('bin/nu', ["-c", `${cmd} ${commandArguments}`], { cwd: cwd });
         const output = await command.execute();
         console.log("output ", output);
@@ -309,14 +318,6 @@ function App() {
                             </button>
                         </div>
                     </div>
-                    {/* <div className="dropdown">
-                        <button className="menu-item dropdown-button">Display</button>
-                        <div className="dropdown-content">
-                            <a href="/" className="menu-item">Open Explorer</a>
-                            <a href="/" className="menu-item">New Terminal</a>
-                            <a href="/" className="menu-item">Close Terminal</a>
-                        </div>
-                    </div> */}
                     <div className="window-button-container">
                         <div className="titlebar-button" id="titlebar-minimize" onClick={onMinimize}>
                             <svg className="svg" xmlns="http://www.w3.org/2000/svg" height="16" width="14" viewBox="0 0 448 512">
