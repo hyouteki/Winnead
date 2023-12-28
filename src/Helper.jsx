@@ -1,6 +1,9 @@
 export const DEFAULT_CONFIG_STR = `{
     "defaultPath": "C:/Winnead/",
-    "explorerOnStartUp": true,
+    "explorer": {
+        "showOnStartUp": true,
+        "defaultWidth": "18%"
+    },
     "defaultValue": "// Welcome to Winnead",
     "defaultLanguage": "javascript",
     "theme": "vs-dark",

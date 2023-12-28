@@ -10,6 +10,8 @@ import { DEFAULT_CONFIG_STR } from './Helper';
 import SplitPane, { Pane } from 'split-pane-react';
 import 'split-pane-react/esm/themes/default.css';
 import Explorer from './components/Explorer';
+import { ReactTerminal } from "react-terminal";
+import { configDir } from '@tauri-apps/api/path';
 
 const CONFIG_PATH = "C:/Winnead/config.json";
 const WINNEAD_DIR_PATH = "C:/Winnead";
@@ -17,7 +19,7 @@ const DEFAULT_CONFIG = JSON.parse(DEFAULT_CONFIG_STR);
 
 let CONFIG = DEFAULT_CONFIG
 if (await fs.exists(CONFIG_PATH)) {
-    try {CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH))} catch (e) {}
+    try { CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH)) } catch (e) { }
 } else {
     console.log("Saving @", CONFIG_PATH);
     await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
@@ -30,6 +32,7 @@ const fileType = (ext) => {
         "js": "javascript",
         "jsx": "javascript",
         "md": "markdown",
+        "py": "python",
     };
     return (ext in known) ? known[ext] : ext;
 }
@@ -43,14 +46,18 @@ const getConfig = async () => {
 }
 
 function App() {
-    const [sizes, setSizes] = useState([100, '30%', 'auto']);
+    const [explorerSizes, setExplorerSizes] = useState([(CONFIG.explorer.showOnStartUp)
+        ? CONFIG.explorer.defaultWidth : "0%", 'auto']);
     const [explorerItems, setExlorerItems] = useState([]);
-    const [explorerVisibility, setExplorerVisibility] = useState(CONFIG.explorerOnStartUp);
+    const [lastExplorerWidth, setLastExplorerWidth] = useState([CONFIG.explorer.defaultWidth]);
     const [curPath, setCurPath] = useState(DEFAULT_PATH);
 
     const readCurDir = async () => {
-        setExlorerItems((explorerVisibility) ? await fs.readDir(curPath, { recursive: false }) : []);
+        setExlorerItems((explorerSizes[0] !== '0%') ? await fs.readDir(curPath, { recursive: false }) : []);
     }
+
+    console.log(CONFIG);
+    console.log(explorerSizes);
 
     useEffect(() => { readCurDir(); }, []);
 
@@ -108,7 +115,7 @@ function App() {
         if (!file.valid) return;
         console.log("Saving @", file.path);
         await fs.writeTextFile(file.path, editorRef.current.getValue());
-        if (file.path == CONFIG_PATH) {onReloadConfig();}
+        if (file.path == CONFIG_PATH) { onReloadConfig(); }
     }, [file, editorRef]);
 
     const onSaveAs = useCallback(async () => {
@@ -127,7 +134,7 @@ function App() {
 
     const onReloadConfig = useCallback(async () => {
         if (await fs.exists(CONFIG_PATH)) {
-            try {CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH))} catch (e) {}
+            try { CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH)) } catch (e) { }
         } else {
             console.log("Saving @", CONFIG_PATH);
             await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
@@ -197,7 +204,13 @@ function App() {
         setExlorerItems(newExplorerTree);
     }
 
-    const onToggleExplorer = () => {setExplorerVisibility(!explorerVisibility)};
+    const onToggleExplorer = () => {
+        if (explorerSizes[0] === '0%') setExplorerSizes([lastExplorerWidth, 'auto']);
+        else {
+            setLastExplorerWidth(explorerSizes[0]);
+            setExplorerSizes(['0%', 'auto']);
+        }
+    };
 
     useOnCtrlKeyPress(onNewFile, "KeyN");
     useOnCtrlKeyPress(onOpen, "KeyO");
@@ -283,7 +296,7 @@ function App() {
                 </div>
             </div>
             <div className="row content">
-                {explorerVisibility && <SplitPane split='vertical' sizes={sizes} onChange={setSizes}>
+                <SplitPane split='vertical' sizes={explorerSizes} onChange={setExplorerSizes}>
                     <Pane minSize="0%" maxSize='50%'>
                         <Explorer items={explorerItems} openFile={openFile}
                             expandFolder={expandFolder} collapseFolder={collapseFolder} />
@@ -296,15 +309,7 @@ function App() {
                         value={file.value}
                         onMount={onEditorMount}
                         options={CONFIG.options} />
-                </SplitPane>}
-                {!explorerVisibility && <Editor
-                    defaultValue={CONFIG.defaultValue}
-                    defaultLanguage={CONFIG.defaultLanguage}
-                    theme={CONFIG.theme}
-                    language={file.lang}
-                    value={file.value}
-                    onMount={onEditorMount}
-                    options={CONFIG.options} />}
+                </SplitPane>
             </div>
         </div>
     );
