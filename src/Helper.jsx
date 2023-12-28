@@ -4,9 +4,22 @@ export const DEFAULT_CONFIG_STR = `{
         "showOnStartUp": true,
         "defaultWidth": "18%"
     },
+    "terminal": {
+        "showOnStartUp": true,
+        "defaultWidth": "30%",
+        "showControlBar": false,
+        "promptSymbol": ">",
+        "theme": "material-dark"
+    },
     "defaultValue": "// Welcome to Winnead",
     "defaultLanguage": "javascript",
     "theme": "vs-dark",
+    "languageExtensionMap": {
+        "js": "javascript",
+        "jsx": "javascript",
+        "md": "markdown",
+        "py": "python"
+    },
     "options": {
         "tabSize": 4,
         "insertSpaces": true,

@@ -11,30 +11,25 @@ import SplitPane, { Pane } from 'split-pane-react';
 import 'split-pane-react/esm/themes/default.css';
 import Explorer from './components/Explorer';
 import { ReactTerminal } from "react-terminal";
-import { configDir } from '@tauri-apps/api/path';
+import { Command } from '@tauri-apps/api/shell';
+import * as path from '@tauri-apps/api/path';
 
 const CONFIG_PATH = "C:/Winnead/config.json";
 const WINNEAD_DIR_PATH = "C:/Winnead";
 const DEFAULT_CONFIG = JSON.parse(DEFAULT_CONFIG_STR);
 
-let CONFIG = DEFAULT_CONFIG
+let config = DEFAULT_CONFIG
 if (await fs.exists(CONFIG_PATH)) {
-    try { CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH)) } catch (e) { }
+    try { config = JSON.parse(await fs.readTextFile(CONFIG_PATH)) } catch (e) { }
 } else {
     console.log("Saving @", CONFIG_PATH);
     await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
 }
 
-const DEFAULT_PATH = (CONFIG.defaultPath) ? CONFIG.defaultPath : "C:/Winnead";
+const DEFAULT_PATH = (config.defaultPath) ? config.defaultPath : "C:/Winnead";
 
 const fileType = (ext) => {
-    const known = {
-        "js": "javascript",
-        "jsx": "javascript",
-        "md": "markdown",
-        "py": "python",
-    };
-    return (ext in known) ? known[ext] : ext;
+    return (ext in config.languageExtensionMap) ? config.languageExtensionMap[ext] : ext;
 }
 
 const Keymap = ({ keymap }) => {
@@ -46,30 +41,35 @@ const getConfig = async () => {
 }
 
 function App() {
-    const [explorerSizes, setExplorerSizes] = useState([(CONFIG.explorer.showOnStartUp)
-        ? CONFIG.explorer.defaultWidth : "0%", 'auto']);
-    const [explorerItems, setExlorerItems] = useState([]);
-    const [lastExplorerWidth, setLastExplorerWidth] = useState([CONFIG.explorer.defaultWidth]);
+    const [explorerSizes, setExplorerSizes] = useState([(config.explorer.showOnStartUp)
+        ? config.explorer.defaultWidth : "0%", 'auto']);
+    const [explorerItems, setExplorerItems] = useState([]);
+    const [lastExplorerWidth, setLastExplorerWidth] = useState([config.explorer.defaultWidth]);
+    const [terminalSizes, setTerminalSizes] = useState(['auto', (config.terminal.showOnStartUp)
+        ? config.terminal.defaultWidth : "0%"]);
+    const [lastTerminalWidth, setLastTerminalWidth] = useState([config.terminal.defaultWidth]);
     const [curPath, setCurPath] = useState(DEFAULT_PATH);
+    const [cwd, setCwd] = useState(DEFAULT_PATH);
 
     const readCurDir = async () => {
-        setExlorerItems((explorerSizes[0] !== '0%') ? await fs.readDir(curPath, { recursive: false }) : []);
+        setExplorerItems((explorerSizes[0] !== '0%') ? await fs.readDir(curPath, { recursive: false }) : []);
     }
 
-    console.log(CONFIG);
-    console.log(explorerSizes);
+    const readDir = async (dirPath) => {
+        setExplorerItems((explorerSizes[0] !== '0%') ? await fs.readDir(dirPath, { recursive: false }) : []);
+    }
 
     useEffect(() => { readCurDir(); }, []);
 
     const [file, setFile] = useState({
         valid: false,
         path: DEFAULT_PATH,
-        value: CONFIG.defaultValue,
-        lang: CONFIG.defaultLanguage,
+        value: config.defaultValue,
+        lang: config.defaultLanguage,
     });
 
     const editorRef = useRef(null);
-    function onEditorMount(editor, _) { editorRef.current = editor; }
+    function onEditorMount(editor, _) { editorRef.current = editor; editor.focus(); }
 
     const onMinimize = async () => { await appWindow.minimize(); }
     const onMaximize = async () => { await appWindow.maximize(); }
@@ -77,7 +77,7 @@ function App() {
 
     const onNewFile = useCallback(async () => {
         await onSave();
-        setFile({ valid: false, path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage, });
+        setFile({ valid: false, path: curPath, value: config.defaultValue, lang: config.defaultLanguage, });
     }, [])
 
     const onOpen = useCallback(async () => {
@@ -107,8 +107,8 @@ function App() {
         if (selectedPath === null) return;
         setExplorerVisibility(true);
         setCurPath(selectedPath);
-        setExlorerItems(await fs.readDir(selectedPath, { recursive: false }));
-        setFile({ valid: false, path: curPath, value: CONFIG.defaultValue, lang: CONFIG.defaultLanguage });
+        setExplorerItems(await fs.readDir(selectedPath, { recursive: false }));
+        setFile({ valid: false, path: curPath, value: config.defaultValue, lang: config.defaultLanguage });
     }, []);
 
     const onSave = useCallback(async () => {
@@ -134,17 +134,17 @@ function App() {
 
     const onReloadConfig = useCallback(async () => {
         if (await fs.exists(CONFIG_PATH)) {
-            try { CONFIG = JSON.parse(await fs.readTextFile(CONFIG_PATH)) } catch (e) { }
+            try { config = JSON.parse(await fs.readTextFile(CONFIG_PATH)) } catch (e) { }
         } else {
             console.log("Saving @", CONFIG_PATH);
             await fs.writeTextFile(CONFIG_PATH, DEFAULT_CONFIG_STR);
         }
-        editorRef.current.updateOptions(CONFIG.options)
+        editorRef.current.updateOptions(config.options)
     });
 
     const onCloseFolder = useCallback(async () => {
         await onSave();
-        setExlorerItems([]);
+        setExplorerItems([]);
         setExplorerVisibility(false);
     }, []);
 
@@ -181,7 +181,7 @@ function App() {
                 break;
             }
         }
-        setExlorerItems(newExplorerTree);
+        setExplorerItems(newExplorerTree);
     }
 
     const collapseFolder = async (item, parents) => {
@@ -201,7 +201,7 @@ function App() {
                 break;
             }
         }
-        setExlorerItems(newExplorerTree);
+        setExplorerItems(newExplorerTree);
     }
 
     const onToggleExplorer = () => {
@@ -212,12 +212,52 @@ function App() {
         }
     };
 
+    const onToggleTerminal = () => {
+        if (terminalSizes[1] === "0%") setTerminalSizes(["auto", lastTerminalWidth]);
+        else {
+            setLastTerminalWidth(terminalSizes[1]);
+            setTerminalSizes(["auto", "0%"]);
+        }
+    };
+
+    const terminalDefaultHandler = async (cmd, commandArguments) => {
+        if (cmd === "cd") {
+            const newCwd = (await path.isAbsolute(commandArguments))
+                ? commandArguments : await path.resolve(cwd, commandArguments);
+            console.log("new cwd ", newCwd);
+            const command = Command.sidecar('bin/nu', ["-c", `cd ${newCwd}`], { cwd: cwd.slice(0) });
+            const output = await command.execute();
+            if (output.stderr.length != 0) return output.stderr;
+            setCwd(newCwd);
+            readCurDir();
+            return output.stdout;
+        } else if (cmd === "xp") {
+            const newCwd = (await path.isAbsolute(commandArguments))
+                ? commandArguments : await path.resolve(cwd, commandArguments);
+            console.log("new cwd ", newCwd);
+            const command = Command.sidecar('bin/nu', ["-c", `cd ${newCwd}`], { cwd: cwd.slice(0) });
+            const output = await command.execute();
+            if (output.stderr.length != 0) return output.stderr;
+            setCwd(newCwd);
+            setCurPath(newCwd);
+            readDir(newCwd);
+            return output.stdout;
+        } else if (cmd === "ls") cmd = "lsd";
+        const command = Command.sidecar('bin/nu', ["-c", `${cmd} ${commandArguments}`], { cwd: cwd });
+        const output = await command.execute();
+        console.log("output ", output);
+        readCurDir();
+        if (output.stderr.length != 0) return output.stderr;
+        return output.stdout;
+    };
+
     useOnCtrlKeyPress(onNewFile, "KeyN");
     useOnCtrlKeyPress(onOpen, "KeyO");
     useOnCtrlKeyPress(onOpenFolder, "KeyK");
     useOnCtrlKeyPress(onSave, "KeyS");
     useOnCtrlKeyPress(onEditConfig, "Comma");
     useOnCtrlKeyPress(onToggleExplorer, "KeyB");
+    useOnCtrlKeyPress(onToggleTerminal, "KeyT");
     useOnCtrlShiftKeyPress(onReloadConfig, "Comma");
     useOnCtrlShiftKeyPress(onSaveAs, "KeyS");
 
@@ -264,8 +304,9 @@ function App() {
                             <button className="menu-item" onClick={onToggleExplorer}>
                                 Toggle Explorer&nbsp;&nbsp;<Keymap keymap={"Ctrl+B"} />
                             </button>
-                            {/* <a href="/" className="menu-item">Runner</a>
-                            <a href="/" className="menu-item">Terminal</a> */}
+                            <button className="menu-item" onClick={onToggleTerminal}>
+                                Toggle Terminal&nbsp;&nbsp;<Keymap keymap={"Ctrl+T"} />
+                            </button>
                         </div>
                     </div>
                     {/* <div className="dropdown">
@@ -301,14 +342,25 @@ function App() {
                         <Explorer items={explorerItems} openFile={openFile}
                             expandFolder={expandFolder} collapseFolder={collapseFolder} />
                     </Pane>
-                    <Editor
-                        defaultValue={CONFIG.defaultValue}
-                        defaultLanguage={CONFIG.defaultLanguage}
-                        theme={CONFIG.theme}
-                        language={file.lang}
-                        value={file.value}
-                        onMount={onEditorMount}
-                        options={CONFIG.options} />
+                    <SplitPane split='horizontal' sizes={terminalSizes} onChange={setTerminalSizes}>
+
+                        <Editor
+                            defaultValue={config.defaultValue}
+                            defaultLanguage={config.defaultLanguage}
+                            theme={config.theme}
+                            language={file.lang}
+                            value={file.value}
+                            onMount={onEditorMount}
+                            options={config.options} />
+                        <Pane minSize="0%" maxSize='100%'>
+                            <ReactTerminal
+                                defaultHandler={terminalDefaultHandler}
+                                theme={config.terminal.theme}
+                                showControlBar={config.terminal.showControlBar}
+                                prompt={`${cwd} ${config.terminal.promptSymbol}`}
+                            />
+                        </Pane>
+                    </SplitPane>
                 </SplitPane>
             </div>
         </div>

@@ -12,20 +12,36 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "path": {
+        "all": true
+      },
       "dialog": {
         "all": true,
         "open": true,
         "save": true
       },
       "shell": {
-        "all": false,
-        "open": true
+        "sidecar": true,
+        "scope": [
+          {
+            "name": "bin/nu",
+            "sidecar": true,
+            "args": [
+              "-c",
+              {
+                "validator": ".*"
+              }
+            ]
+          }
+        ]
       },
       "fs": {
         "all": true,
         "readFile": true,
         "writeFile": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       },
       "process": {
         "exit": true
@@ -52,6 +68,9 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
+      ],
+      "externalBin": [
+        "bin/nu"
       ]
     },
     "security": {

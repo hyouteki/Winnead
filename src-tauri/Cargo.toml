@@ -13,7 +13,7 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = [ "window-close", "window-unmaximize", "window-start-dragging", "window-maximize", "window-minimize", "window-show", "window-unminimize", "window-hide", "fs-all", "process-exit", "dialog-all", "shell-open"] }
+tauri = { version = "1.5", features = [ "path-all", "shell-sidecar", "window-close", "window-unmaximize", "window-start-dragging", "window-maximize", "window-minimize", "window-show", "window-unminimize", "window-hide", "fs-all", "process-exit", "dialog-all"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }

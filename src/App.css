@@ -52,3 +52,7 @@ body {
 .explorer {
   background-color: var(--explorer-bg);
 }
+
+.paddingBottom20px {
+  padding-bottom: 20px;
+}

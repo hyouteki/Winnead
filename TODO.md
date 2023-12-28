@@ -1,1 +1,0 @@
-- add new category in options (explorer) (default eplorer width in %, show explorer on start up)
