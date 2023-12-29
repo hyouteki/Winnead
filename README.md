@@ -10,8 +10,8 @@ npm run tauri dev
 ```
 
 ## Installation
-[![](https://badgen.net/badge/Windows-x86_64-installer/v0.0.0/blue?icon=windows)](https://github.com/Hyouteki/Winnead/releases/download/v0.0.0/Winnead_0.0.0_x64_en-US.msi)
-[![](https://badgen.net/badge/Windows-x86_64-setup/v0.0.0/green?icon=windows)](https://github.com/Hyouteki/Winnead/releases/download/v0.0.0/Winnead_0.0.0_x64-setup.exe)
+[![](https://badgen.net/badge/Windows-x86_64-installer/v0.0.1/blue?icon=windows)](https://github.com/Hyouteki/Winnead/releases/download/v0.0.1/Winnead_0.0.1_x64_en-US.msi)
+[![](https://badgen.net/badge/Windows-x86_64-setup/v0.0.1/green?icon=windows)](https://github.com/Hyouteki/Winnead/releases/download/v0.0.1/Winnead_0.0.1_x64-setup.exe)
 
 
 ## Dependencies
