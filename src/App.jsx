@@ -225,7 +225,7 @@ function App() {
             const newCwd = (await path.isAbsolute(commandArguments))
                 ? commandArguments : await path.resolve(cwd, commandArguments);
             console.log("new cwd ", newCwd);
-            const command = Command.sidecar('bin/nu', ["-c", `cd ${newCwd}`], { cwd: cwd.slice(0) });
+            const command = Command.sidecar('bin/powershell', [`cd ${newCwd}`], { cwd: cwd.slice(0) });
             const output = await command.execute();
             if (output.stderr.length != 0) return output.stderr;
             setCwd(newCwd);
@@ -235,14 +235,14 @@ function App() {
             const newCwd = (await path.isAbsolute(commandArguments))
                 ? commandArguments : await path.resolve(cwd, commandArguments);
             console.log("new cwd ", newCwd);
-            const command = Command.sidecar('bin/nu', ["-c", `cd ${newCwd}`], { cwd: cwd.slice(0) });
+            const command = Command.sidecar('bin/powershell', [`cd ${newCwd}`], { cwd: cwd.slice(0) });
             const output = await command.execute();
             if (output.stderr.length != 0) return output.stderr;
             setCwd(newCwd);
             setCurPath(newCwd);
             readDir(newCwd);
             return output.stdout;
-        } else if (cmd === "ls") cmd = "lsd";
+        }
         else if (cmd == "ed") {
             const filepath = (await path.isAbsolute(commandArguments))
                 ? commandArguments : await path.resolve(cwd, commandArguments);
@@ -252,12 +252,14 @@ function App() {
             setFile({ valid: true, path: filepath, value: value, lang: lang });
             return `${filepath} opened in editor`;
         }
-        const command = Command.sidecar('bin/nu', ["-c", `${cmd} ${commandArguments}`], { cwd: cwd });
+        const command = Command.sidecar('bin/powershell', [`${cmd} ${commandArguments}`], { cwd: cwd });
         const output = await command.execute();
         console.log("output ", output);
         readCurDir();
         if (output.stderr.length != 0) return output.stderr;
-        return output.stdout;
+        const out = output.stdout.replace(/\r\n/g, "<br/>");
+        console.log(out);
+        return <span><div className="Container" dangerouslySetInnerHTML={{__html: out}}></div></span>;
     };
 
     useOnCtrlKeyPress(onNewFile, "KeyN");

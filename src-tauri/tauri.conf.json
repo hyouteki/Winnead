@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Winnead",
-    "version": "0.0.0"
+    "version": "0.0.1"
   },
   "tauri": {
     "allowlist": {
@@ -24,10 +24,9 @@
         "sidecar": true,
         "scope": [
           {
-            "name": "bin/nu",
+            "name": "bin/powershell",
             "sidecar": true,
             "args": [
-              "-c",
               {
                 "validator": ".*"
               }
@@ -70,7 +69,7 @@
         "icons/icon.ico"
       ],
       "externalBin": [
-        "bin/nu"
+        "bin/powershell"
       ]
     },
     "security": {
