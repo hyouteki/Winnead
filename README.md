@@ -1,5 +1,9 @@
 > Winnead is a Native Text Editor made with [Tauri](https://tauri.app/), [React](https://react.dev/) and [Monaco Editor](https://github.com/microsoft/monaco-editor).
 
+## Features
+- File explorer
+- Terminal with [powershell](https://github.com/PowerShell/PowerShell) 
+
 ## Screenshots
 ![README](images/readme.png)
 ![Config](images/config.png)
